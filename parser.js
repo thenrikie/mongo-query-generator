@@ -23,6 +23,10 @@ function parseExpression(s){
       t.childs.push(n);
     }
 
+    if (!t.content){
+        t = n;
+    }
+  
     return {t: t, s: s};
 }
 
@@ -43,11 +47,32 @@ function parseTerm(s){
         n = o.t
         t.childs.push(n);
     }
+  
+    if (!t.content){
+        t = n;
+    }
 
     return {t: t, s: s};
 }
 
 function parseFactor(s){
+    s = s.trim();
+    var o;
+    if (s.substr(0,1) === '('){
+        s = s.substr(1);
+        o = parseExpression(s);
+        s = o.s.trim();
+        // remove the close backet )
+        s = s.substr(1);
+    } else {
+        o = parseVar(s);
+        s = o.s.trim();
+    }
+  
+    return {s:s, t: o.t}
+}
+
+function parseVar(s){
     s = s.trim();
     var t = {};
     t.content = s.substr(0,1);
@@ -55,6 +80,7 @@ function parseFactor(s){
     return {t: t, s: s}
 }
 
+// test case
+parseExpression('a || b && (c || d)');
 parseExpression('a || b && c || d');
-
-
+parseExpression('a');
