@@ -2,7 +2,7 @@
 <expression>  ::=  <term> [ || <term> ]...
 <term>  ::=  <factor> [ && <factor> ]...
 <factor>  ::=  <cond>  |  "(" <expression> ")"
-<cond> ::= [ "!" ] <varname> | <varname> [("!=="|"==="|"=="|"!=")] <varname>]
+<cond> ::= [ "!" ] <varname> | <varname> [("!=="|"==="|"=="|"!=")] "<varname>"] | <varname> [("!=="|"==="|"=="|"!=")] '<varname>']
 <varname> :== a-zA-Z_ [<varbody>]
 <varbody> :== $_-a-zA-Z0-9 [<varbody>]
 */
@@ -89,9 +89,59 @@ function parseCond(s){
     }
   
     var o = parseVarName(s);
-    s = o.s;
+    s = o.s.trim();
+
+    if (o.ms.trim() === "") {
+        throw new Error('missing LHS variable');
+    }
     t.content += o.ms.trim();
-  
+       
+    var comp = "";
+    if (s.substr(0,3) === "===" ||s.substr(0,3) === "!=="){
+        comp = s.substr(0,3);   
+        s = s.substr(3);
+    } else if (s.substr(0,2) === "==" ||s.substr(0,2) === "!=" || s.substr(0,2) === ">=" || s.substr(0,2) === "<="){
+        comp = s.substr(0,2); 
+        s = s.substr(2);
+    } else if (s.substr(0,2) === ">" || s.substr(0,2) === "<"){
+        comp = s.substr(0,1); 
+        s = s.substr(1);
+    }
+    
+    if (comp !== ""){
+        t.content += comp;
+        
+        var o;
+        
+        s = s.trim();
+        if(s.substr(0,1) === "'"){
+            s = s.substr(1);
+            o = parseVarName(s);
+            s = o.s.trim();
+            if (s.substr(0,1) !== "'"){
+                throw new Error("missing closing '");
+            }
+        } else if (s.substr(0,1) === "\""){
+            s = s.substr(1);
+            o = parseVarName(s);
+            s = o.s.trim();
+            if (s.substr(0,1) !== "\""){
+                throw new Error("missing closing \"");
+            }
+        } else {
+            s = s.substr(1);
+            o = parseVarName(s);
+            s = o.s;
+        }
+        
+        
+        
+        if (o.ms.trim() === "") {
+            throw new Error('missing RHS variable');
+        }
+        t.content += o.ms.trim();        
+    }
+    
     return {t: t, s: s};
   
 
@@ -99,10 +149,13 @@ function parseCond(s){
 
 function parseVarName(s){
     s = s.trim();
-    var ms;
+    var ms = "";
     if(s.substr(0,1).match(/[a-zA-Z_]/)){
         ms = s.substr(0,1);
         s = s.substr(1);
+        var o = parseVarBody(s);
+        ms += o.ms;
+        s = o.s;
     } else {
         throw new Error('invalid variable name');
         return null;
@@ -110,6 +163,18 @@ function parseVarName(s){
   
     return {s : s, ms : ms};
 }
+
+function parseVarBody(s){
+    var ms = "";
+    while(s.substr(0,1).match(/a-zA-Z_0-9$\.\-/)){
+        s = s.trim();
+        ms += s.substr(0,1);
+        s = s.substr(1);
+    }
+    return {s: s, ms: ms}
+}
+
+
 
 function parseVar(s){
     s = s.trim();
