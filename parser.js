@@ -2,9 +2,12 @@
 <expression>  ::=  <term> [ || <term> ]...
 <term>  ::=  <factor> [ && <factor> ]...
 <factor>  ::=  <cond>  |  "(" <expression> ")"
-<cond> ::= [ "!" ] <varname> | <varname> [("!=="|"==="|"=="|"!=")] "<varname>"] | <varname> [("!=="|"==="|"=="|"!=")] '<varname>']
-<varname> :== a-zA-Z_ [<varbody>]
-<varbody> :== $_-a-zA-Z0-9 [<varbody>]
+<cond> ::= [ "!" ] <varname> | <varname> ("!=="|"==="|"=="|"!=") ("<string>" | '<string>' | <number> | true | false)
+<varname> :== {a-zA-Z_} [<varbody>]
+<varbody> :== {$_-a-zA-Z0-9} [<varbody>]
+<string> := "" | {.} [<string>]
+<number> := ["-"] ("" | <DigitSeq>) ["."] <DigitSeq> 
+<DigitSeq> := {0-9} [<DigitSeq>]
 */
 
 function parseExpression(s){
@@ -72,7 +75,7 @@ function parseFactor(s){
         throw new Error('extra )');
         return null;
     } else {
-        o = parseVar(s);
+        o = parseCond(s);
         s = o.s;
     }
   
@@ -103,7 +106,7 @@ function parseCond(s){
     } else if (s.substr(0,2) === "==" ||s.substr(0,2) === "!=" || s.substr(0,2) === ">=" || s.substr(0,2) === "<="){
         comp = s.substr(0,2); 
         s = s.substr(2);
-    } else if (s.substr(0,2) === ">" || s.substr(0,2) === "<"){
+    } else if (s.substr(0,1) === ">" || s.substr(0,1) === "<"){
         comp = s.substr(0,1); 
         s = s.substr(1);
     }
@@ -121,6 +124,7 @@ function parseCond(s){
             if (s.substr(0,1) !== "'"){
                 throw new Error("missing closing '");
             }
+            s = s.substr(1);
         } else if (s.substr(0,1) === "\""){
             s = s.substr(1);
             o = parseVarName(s);
@@ -128,8 +132,8 @@ function parseCond(s){
             if (s.substr(0,1) !== "\""){
                 throw new Error("missing closing \"");
             }
-        } else {
             s = s.substr(1);
+        } else {
             o = parseVarName(s);
             s = o.s;
         }
@@ -174,7 +178,19 @@ function parseVarBody(s){
     return {s: s, ms: ms}
 }
 
-
+function parseString(s, stopChar){
+    var ms = "";
+    while(s.substr(0,1) !== stopChar){
+      if (s.substr(0,2) === '\\' + stopChar){
+        ms += s.substr(0,2);
+        s = s.substr(2);
+      } else {
+        ms += s.substr(0,1);
+        s = s.substr(1);
+      }
+    }
+    return {s: s, ms: ms}
+}
 
 function parseVar(s){
     s = s.trim();
@@ -185,5 +201,5 @@ function parseVar(s){
 }
 
 // test case
-parseExpression('a || b && (c || d)');
+parseExpression('a || !b=="c" && (c || d)');
 //parseExpression('a');
