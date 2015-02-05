@@ -1,13 +1,11 @@
 /*
-<expression>  ::=  <term> [ || <term> ]...
-<term>  ::=  <factor> [ && <factor> ]...
-<factor>  ::=  <cond>  |  "(" <expression> ")"
-<cond> ::= [ "!" ] <varname> | <varname> ("!=="|"==="|"=="|"!=") ("<string>" | '<string>' | <number> | true | false)
-<varname> :== {a-zA-Z_} [<varbody>]
-<varbody> :== {$_-a-zA-Z0-9} [<varbody>]
-<string> := "" | {.} [<string>]
-<number> := ["-"] ("" | <DigitSeq>) ["."] <DigitSeq> 
-<DigitSeq> := {0-9} [<DigitSeq>]
+<expression>  ::=  <term> *( || <term> )
+<term>  ::=  <factor> *( && <factor> )
+<factor>  ::=  <pred>  |  "(" <expression> ")"
+<pred> ::= [!] <var> | <var> (!==|===|==|!=|>=|<=|>|<) ("<string>" | '<string>' | <number> | true | false | null)
+<var> ::= {a-zA-Z_} *({$_-a-zA-Z0-9})
+<string> ::= "" | {.} *(<string>)
+<number> ::= [-] 1*({0-9}) ["." 1*({0-9})]
 */
 
 function parseExpression(s){
@@ -75,14 +73,14 @@ function parseFactor(s){
         throw new Error('extra )');
         return null;
     } else {
-        o = parseCond(s);
+        o = parsePred(s);
         s = o.s;
     }
   
     return {s:s, t: o.t}
 }
 
-function parseCond(s){
+function parsePred(s){
     s = s.trim();
     var t = { content: ''};
     
@@ -91,7 +89,7 @@ function parseCond(s){
         s = s.substr(1);
     }
   
-    var o = parseVarName(s);
+    var o = parseVar(s);
     s = o.s.trim();
 
     if (o.ms.trim() === "") {
@@ -119,30 +117,37 @@ function parseCond(s){
         s = s.trim();
         if(s.substr(0,1) === "'"){
             s = s.substr(1);
-            o = parseVarName(s);
+            o = parseString(s, "'");
             s = o.s.trim();
             if (s.substr(0,1) !== "'"){
                 throw new Error("missing closing '");
             }
             s = s.substr(1);
+            o.ms = "'" + o.ms.trim() + "'";
         } else if (s.substr(0,1) === "\""){
             s = s.substr(1);
-            o = parseVarName(s);
+            o = parseString(s, "\"");
             s = o.s.trim();
             if (s.substr(0,1) !== "\""){
                 throw new Error("missing closing \"");
             }
             s = s.substr(1);
+            o.ms = "\"" + o.ms.trim() + "\"";
+        } else if (s.substr(0,4) === "true" || s.substr(0,4) === "null"){
+            s = s.substr(4);
+            o.ms = s.substr(0,4);
+        } else if (s.substr(0,5) === "false"){
+            s = s.substr(5);
+            o.ms = "false";
         } else {
-            o = parseVarName(s);
+            o = parseNumber(s);
             s = o.s;
         }
         
         
         
-        if (o.ms.trim() === "") {
-            throw new Error('missing RHS variable');
-        }
+
+
         t.content += o.ms.trim();        
     }
     
@@ -151,15 +156,18 @@ function parseCond(s){
 
 }
 
-function parseVarName(s){
+function parseVar(s){
     s = s.trim();
     var ms = "";
     if(s.substr(0,1).match(/[a-zA-Z_]/)){
         ms = s.substr(0,1);
         s = s.substr(1);
-        var o = parseVarBody(s);
-        ms += o.ms;
-        s = o.s;
+
+        while(s.substr(0,1).match(/[a-zA-Z_0-9$\.\-]/)){
+            ms += s.substr(0,1);
+            s = s.substr(1);
+        }
+
     } else {
         throw new Error('invalid variable name');
         return null;
@@ -168,15 +176,6 @@ function parseVarName(s){
     return {s : s, ms : ms};
 }
 
-function parseVarBody(s){
-    var ms = "";
-    while(s.substr(0,1).match(/a-zA-Z_0-9$\.\-/)){
-        s = s.trim();
-        ms += s.substr(0,1);
-        s = s.substr(1);
-    }
-    return {s: s, ms: ms}
-}
 
 function parseString(s, stopChar){
     var ms = "";
@@ -192,14 +191,44 @@ function parseString(s, stopChar){
     return {s: s, ms: ms}
 }
 
-function parseVar(s){
+function parseNumber(s){
+
     s = s.trim();
-    var t = {};
-    t.content = s.substr(0,1);
-    s = s.substr(1);
-    return {t: t, s: s};
+
+    var ms = "";
+    if(s.substr(0,1) === "-"){
+        ms += "-";
+        s = s.substr(1);
+    }
+
+    while(s.substr(0,1).match(/[0-9]/)){
+        ms += s.substr(0,1);
+        s = s.substr(1);
+    }
+
+    if (ms === '-' || ms.length === 0){
+        throw new Error('parse RHS variable error');
+    }
+
+    if(s.substr(0,1) === "."){
+        ms += ".";
+        s = s.substr(1);
+
+        var c = 0;
+        while(s.substr(0,1).match(/[0-9]/)){
+            ms += s.substr(0,1);
+            s = s.substr(1);
+            c++;
+        }
+
+        if (c === 0){
+            throw new Error('parse number error');
+        }
+    }
+
+    return {s: s, ms: ms}
 }
 
 // test case
-parseExpression('a || !b=="c" && (c || d)');
+parseExpression('!document.disabled && (document.status === null || document.status == "OK") || user.isAdmin');
 //parseExpression('a');
