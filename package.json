@@ -1,0 +1,27 @@
+{
+  "name": "mongo-query-generator",
+  "version": "0.1.0",
+  "description": "Mongo query generator",
+  "main": "index.js",
+  "devDependencies": {
+    "jshint": "^2.6.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thenrikie/mongo-query-generator.git"
+  },
+  "keywords": [
+    "mongo",
+    "mongo-query",
+    "mongoose-query"
+  ],
+  "author": "Henry Liu <thenrikie@hotmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thenrikie/mongo-query-generator/issues"
+  },
+  "homepage": "https://github.com/thenrikie/mongo-query-generator"
+}
