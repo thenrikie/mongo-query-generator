@@ -4,7 +4,9 @@
   "description": "Mongo query generator",
   "main": "index.js",
   "devDependencies": {
-    "jshint": "^2.6.0"
+    "jshint": "^2.6.0",
+    "mocha": "~2.1.0",
+    "chai": "~2.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

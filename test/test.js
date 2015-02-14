@@ -61,7 +61,7 @@ describe('MongoQueryBuilder', function(){
 	});
 
 	it('should work with != or !== operator', function(){
-		assert.deepEqual(MongoQueryBuilder('a!="1"'), {a : {'$ne' : 1}});
+		assert.deepEqual(MongoQueryBuilder('a!="1"'), {a : {'$ne' : '1'}});
 		assert.deepEqual(MongoQueryBuilder('a!==true'), {a : {'$ne' : true}});
 	});
 
@@ -76,23 +76,48 @@ describe('MongoQueryBuilder', function(){
 	});
 
 
-	it('should work with  or < operator', function(){
-		assert.deepEqual(MongoQueryBuilder('a < 1'), {a : {'$lt' : 1}});
-		assert.deepEqual(MongoQueryBuilder('a <= 1'), {a : {'$lte' : 1}});
+	it('should work with single and double quote', function(){
+		assert.deepEqual(MongoQueryBuilder('a=="1"'), {a : '1'});
+		assert.deepEqual(MongoQueryBuilder("a=='1'"), {a : '1'});
 	});
 
-	it('should know the && has higher precedence then ||', function(){
+	it('should work with string escape', function(){
+		assert.deepEqual(MongoQueryBuilder('a=="\\"1"'), {a : '"1'});
+		assert.deepEqual(MongoQueryBuilder("a=='\\'1'"), {a : "'1"});
+	});
+
+	it('should know  && has higher precedence then ||', function(){
 		assert.deepEqual(MongoQueryBuilder('a || b && c'), {'$or' : [{'a' : true},{ '$and' : [{'b': true},{'c': true}]}]});
 		assert.deepEqual(MongoQueryBuilder('b && c || a'), {'$or' : [{ '$and' : [{'b': true},{'c': true}]}, {'a' : true},]});
 	});
 
-	it('should know the ! has higher precedence then && and ||', function(){
+	it('should know  ! has higher precedence then && and ||', function(){
 		assert.deepEqual(MongoQueryBuilder('a || !b && c'), {'$or' : [{'a' : true},{ '$and' : [{'b': false},{'c': true}]}]});
 	});
 
-	it('should know the () has higher precedence then && and ||', function(){
+	it('should know  () has higher precedence then && and ||', function(){
 		assert.deepEqual(MongoQueryBuilder('(a || b) && c'), {'$and' : [{ '$or' : [{'a': true},{'b': true}]}, {c : true}]});
 		assert.deepEqual(MongoQueryBuilder('c && (a || b)'), {'$and' : [{c : true}, { '$or' : [{'a': true},{'b': true}]}]});
+	});
+
+	it('should throws an error if variable name start with invalid characters', function(){
+		assert.throws(function() {MongoQueryBuilder('$a')});
+		assert.throws(function() {MongoQueryBuilder('-a')});
+		assert.throws(function() {MongoQueryBuilder('.a')});
+		assert.throws(function() {MongoQueryBuilder('0a')});
+		assert.throws(function() {MongoQueryBuilder('1.a')});
+	});
+
+
+	it('should throws an error if missing backets', function(){
+		assert.throws(function() {MongoQueryBuilder('((a)')});
+		assert.throws(function() {MongoQueryBuilder('(a')});
+		assert.throws(function() {MongoQueryBuilder('a)')});
+	});
+
+	it('should throws an error if missing quote', function(){
+		assert.throws(function() {MongoQueryBuilder('a=="1')});
+		assert.throws(function() {MongoQueryBuilder('a==1"')});
 	});
 
 });
