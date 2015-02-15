@@ -7,6 +7,3 @@ var MongoQueryBuilder = function(expression){
 }
 
 module.exports = MongoQueryBuilder;
-
-
-//console.log(JSON.stringify(MongoQueryBuilder('!document.disabled && (document.status !== undefined && document.status == "OK") || user.isAdmin'), null, 2));
