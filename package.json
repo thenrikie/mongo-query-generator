@@ -1,7 +1,7 @@
 {
   "name": "mongo-query-generator",
   "version": "0.1.0",
-  "description": "Mongo query generator",
+  "description": "Generate query object for mongodb or mongoose from JavaScript predicate",
   "main": "index.js",
   "devDependencies": {
     "jshint": "^2.6.0",
